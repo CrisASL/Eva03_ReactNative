@@ -1,61 +1,89 @@
 import { useContext, useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from "react-native";
 import { AuthContext } from "../../components/context/auth-context";
 import NewTask from "../../components/new-task";
 import TaskItem from "../../components/task-item";
-import { getTasks, saveTasks } from "../../utils/storage";
+import { api } from "../../services/api";
 import { Task } from "../../utils/types";
 
 export default function TabsScreen() {
   const auth = useContext(AuthContext);
   const userEmail = auth?.email ?? "";
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadTasks = async () => {
+    setLoading(true);
+    try {
+      const fetchedTasks = await api.getTasks();
+      setTasks(fetchedTasks);
+    } catch (error: any) {
+      Alert.alert("Error", "No se pudieron cargar las tareas");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Cargar tareas del usuario al iniciar sesión
   useEffect(() => {
-    const loadTasks = async () => {
-      const allTasks = await getTasks(); // todas las tareas
-      const userTasks = allTasks.filter((t) => t.userEmail === userEmail);
-      setTasks(userTasks);
-    };
     if (userEmail) loadTasks();
   }, [userEmail]);
 
-  // Guardar tareas del usuario al modificarlas
-  useEffect(() => {
-    const persistTasks = async () => {
-      const allTasks = await getTasks(); // todas las tareas
-      const otherUsersTasks = allTasks.filter((t) => t.userEmail !== userEmail);
-      const merged = [...otherUsersTasks, ...tasks]; // unir tareas
-      await saveTasks(merged);
-    };
-    if (userEmail) persistTasks();
-  }, [tasks, userEmail]);
-
-  const handleCreateTask = (taskData: {
+  const handleCreateTask = async (taskData: {
     title: string;
     imageUri: string | null;
     location: { latitude: number; longitude: number } | null;
   }) => {
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: taskData.title,
-      imageUri: taskData.imageUri,
-      location: taskData.location,
-      completed: false,
-      userEmail,
-    };
-    setTasks((prev) => [...prev, newTask]);
+    try {
+      let photoUri = undefined;
+      if (taskData.imageUri) {
+        photoUri = await api.uploadImage(taskData.imageUri);
+      }
+
+      const newTask = await api.createTask({
+        title: taskData.title,
+        location: taskData.location,
+        photoUri: photoUri,
+      });
+      
+      setTasks((prev) => [...prev, newTask]);
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "No se pudo crear la tarea");
+    }
   };
 
-  const toggleTask = (id: string) => {
+  const toggleTask = async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+
+    // Optimistic update
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
     );
+
+    try {
+      await api.updateTask(id, { completed: !task.completed });
+    } catch (error) {
+      // Revert if failed
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, completed: task.completed } : t))
+      );
+      Alert.alert("Error", "No se pudo actualizar la tarea");
+    }
   };
 
-  const deleteTask = (id: string) => {
+  const deleteTask = async (id: string) => {
+    // Optimistic update
+    const previousTasks = [...tasks];
     setTasks((prev) => prev.filter((t) => t.id !== id));
+
+    try {
+      await api.deleteTask(id);
+    } catch (error) {
+      // Revert if failed
+      setTasks(previousTasks);
+      Alert.alert("Error", "No se pudo eliminar la tarea");
+    }
   };
 
   if (!auth) {
@@ -78,17 +106,21 @@ export default function TabsScreen() {
     <View style={styles.container}>
       <NewTask onCreate={handleCreateTask} />
 
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TaskItem
-            task={item}
-            onToggle={() => toggleTask(item.id)}
-            onDelete={() => deleteTask(item.id)}
-          />
-        )}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <FlatList
+          data={tasks}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TaskItem
+              task={item}
+              onToggle={() => toggleTask(item.id)}
+              onDelete={() => deleteTask(item.id)}
+            />
+          )}
+        />
+      )}
     </View>
   );
 }

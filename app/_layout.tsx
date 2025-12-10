@@ -21,6 +21,10 @@ export default function RootLayout() {
 function InnerLayout() {
   const auth = useContext(AuthContext);
 
+  if (auth?.isLoading) {
+    return null; // Or a splash screen component
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       {!auth?.email ? (

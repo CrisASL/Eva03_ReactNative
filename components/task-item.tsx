@@ -1,5 +1,6 @@
 import { Button, Image, StyleSheet, Text, View } from "react-native";
 import { Task } from "../utils/types";
+
 interface TaskItemProps {
   task: Task;
   onToggle: () => void;
@@ -7,6 +8,11 @@ interface TaskItemProps {
 }
 
 export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
+  const getImageUrl = (uri: string) => {
+    if (uri.startsWith("http")) return uri;
+    return `${process.env.EXPO_PUBLIC_API_URL}${uri}`;
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
@@ -14,8 +20,8 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
         {task.title}
       </Text>
 
-      {task.imageUri && (
-        <Image source={{ uri: task.imageUri }} style={styles.image} />
+      {task.photoUri && (
+        <Image source={{ uri: getImageUrl(task.photoUri) }} style={styles.image} />
       )}
 
       {task.location && (

@@ -1,19 +1,24 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useContext, useState } from "react";
 import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { AuthContext } from "../components/context/auth-context";
-import { LOCAL_USERS } from "../components/context/local-users";
+import { api } from "../services/api";
 
 const LoginScreen = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const router = useRouter();
 
   const auth = useContext(AuthContext);
@@ -21,7 +26,7 @@ const LoginScreen = () => {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const handleLogin = (): void => {
+  const handleSubmit = async (): Promise<void> => {
     if (!email || !password) {
       Alert.alert("Error", "Por favor ingresa tu email y contraseña");
       return;
@@ -32,27 +37,32 @@ const LoginScreen = () => {
       return;
     }
 
-    // 🔍 buscar usuario local
-    const userFound = LOCAL_USERS.find(
-      (u) => u.email === email && u.password === password
-    );
+    setLoading(true);
+    try {
+      let result;
+      if (isRegistering) {
+        result = await api.register(email, password);
+      } else {
+        result = await api.login(email, password);
+      }
+      
+      const { token } = result;
+      await auth.login(email, token);
+      
+      const nombreUsuario = email.split("@")[0];
+      Alert.alert(isRegistering ? "Registro exitoso" : "Inicio de sesión", `Bienvenido, ${nombreUsuario}!`);
 
-    if (!userFound) {
-      Alert.alert("Error", "Credenciales inválidas");
-      return;
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Error al procesar la solicitud");
+    } finally {
+      setLoading(false);
     }
-
-    auth.login(email);
-
-    const nombreUsuario = email.split("@")[0];
-    Alert.alert("Inicio de sesión", `Bienvenido, ${nombreUsuario}!`);
-
-    router.replace("/(tabs)");
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Iniciar Sesión</Text>
+      <Text style={styles.title}>{isRegistering ? "Registrarse" : "Iniciar Sesión"}</Text>
 
       <TextInput
         style={styles.input}
@@ -64,17 +74,34 @@ const LoginScreen = () => {
         onChangeText={setEmail}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        placeholderTextColor="#aaa"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Contraseña"
+          placeholderTextColor="#aaa"
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Pressable onPress={() => setShowPassword(!showPassword)}>
+          <Ionicons name={showPassword ? "eye-off" : "eye"} size={24} color="#aaa" />
+        </Pressable>
+      </View>
 
-      <Pressable style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Ingresar</Text>
+      <Pressable style={styles.button} onPress={handleSubmit} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>{isRegistering ? "Registrarse" : "Ingresar"}</Text>
+        )}
+      </Pressable>
+
+      <Pressable onPress={() => setIsRegistering(!isRegistering)} style={styles.switchButton}>
+        <Text style={styles.switchText}>
+          {isRegistering
+            ? "¿Ya tienes cuenta? Inicia sesión"
+            : "¿No tienes cuenta? Regístrate"}
+        </Text>
       </Pressable>
     </View>
   );
@@ -106,16 +133,40 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 16,
   },
-  button: {
-    backgroundColor: "#007bff",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+  passwordContainer: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginBottom: 15,
+    paddingHorizontal: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  button: {
+    width: "100%",
+    backgroundColor: "#007bff",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
     marginTop: 10,
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  switchButton: {
+    marginTop: 20,
+  },
+  switchText: {
+    color: "#007bff",
     fontSize: 16,
   },
 });

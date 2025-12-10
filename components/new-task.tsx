@@ -1,35 +1,21 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useState } from "react";
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 interface NewTaskProps {
   onCreate: (task: {
     title: string;
     imageUri: string | null;
     location: { latitude: number; longitude: number } | null;
-  }) => void;
+  }) => Promise<void> | void;
 }
 
 export default function NewTask({ onCreate }: NewTaskProps) {
   const [title, setTitle] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-
-  const saveTask = async (task: any) => {
-    try {
-      const stored = await AsyncStorage.getItem("tasks");
-      const tasks = stored ? JSON.parse(stored) : [];
-
-      tasks.push(task);
-
-      await AsyncStorage.setItem("tasks", JSON.stringify(tasks));
-      console.log("Tarea guardada en AsyncStorage");
-    } catch (err) {
-      console.log("Error guardando tarea:", err);
-    }
-  };
+  const [isCreating, setIsCreating] = useState(false);
 
   const pickImage = async () => {
     const res = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -86,18 +72,20 @@ export default function NewTask({ onCreate }: NewTaskProps) {
       return;
     }
 
-    const task = { title, imageUri, location };
+    setIsCreating(true);
+    try {
+      const task = { title, imageUri, location };
+      await onCreate(task);
 
-    // 🔥 Guardar en AsyncStorage
-    await saveTask(task);
-
-    // Mantener compatibilidad con tu componente padre
-    onCreate(task);
-
-    // Reset
-    setTitle("");
-    setImageUri(null);
-    setLocation(null);
+      // Reset
+      setTitle("");
+      setImageUri(null);
+      setLocation(null);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -133,8 +121,12 @@ export default function NewTask({ onCreate }: NewTaskProps) {
         </Text>
       )}
 
-      <TouchableOpacity style={styles.buttonPrimary} onPress={handleCreate}>
-        <Text style={styles.buttonTextPrimary}>Crear tarea</Text>
+      <TouchableOpacity style={styles.buttonPrimary} onPress={handleCreate} disabled={isCreating}>
+        {isCreating ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonTextPrimary}>Crear tarea</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
