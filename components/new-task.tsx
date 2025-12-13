@@ -27,7 +27,7 @@ export default function NewTask({ onCreate }: NewTaskProps) {
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: false,
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.5,
+      quality: 0.2,
     });
 
     if (!result.canceled) {
@@ -44,7 +44,7 @@ export default function NewTask({ onCreate }: NewTaskProps) {
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
-      quality: 0.5,
+      quality: 0.2,
     });
 
     if (!result.canceled) {
