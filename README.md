@@ -7,7 +7,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 - **Cristian Salas**: Lider del Equipo y desarrollador
 - **Popi**: Desarrollador 
 
-[![Link video Youtube] https://www.youtube.com/shorts/t2rrX4XDpmM
+[![Link video Youtube] https://youtube.com/shorts/5gYKUBaQDhM?feature=share
 
 ## Uso de IA
 
@@ -98,7 +98,7 @@ La aplicación utiliza variables de entorno para configurar la URL de la API. Es
 - **Variable**: `EXPO_PUBLIC_API_URL`
 
 ```typescript
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+EXPO_PUBLIC_API_URL=https://todo-list.dobleb.cl
 ```
 
 ## Funcionalidades principales
