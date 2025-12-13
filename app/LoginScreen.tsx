@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useContext, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { AuthContext } from "../components/context/auth-context";
 import { api } from "../services/api";
@@ -54,7 +54,11 @@ const LoginScreen = () => {
 
       router.replace("/(tabs)");
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Error al procesar la solicitud");
+      let message = error.message || "Error al procesar la solicitud";
+      if (message === "Invalid credentials") {
+        message = "Credenciales inválidas";
+      }
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }

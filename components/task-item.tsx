@@ -1,4 +1,4 @@
-import { Button, Image, StyleSheet, Text, View } from "react-native";
+import { Button, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Task } from "../utils/types";
 
 interface TaskItemProps {
@@ -15,10 +15,16 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        {task.completed ? "✅ " : "⬜ "}
-        {task.title}
-      </Text>
+      <View style={styles.header}>
+        <Pressable onPress={onToggle}>
+          <Text style={styles.checkbox}>
+            {task.completed ? "✅ " : "⬜ "}
+          </Text>
+        </Pressable>
+        <Text style={styles.title}>
+          {task.title}
+        </Text>
+      </View>
 
       {task.photoUri && (
         <Image source={{ uri: getImageUrl(task.photoUri) }} style={styles.image} />
@@ -31,10 +37,6 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
       )}
 
       <View style={styles.buttons}>
-        <Button
-          title={task.completed ? "Desmarcar" : "Completar"}
-          onPress={onToggle}
-        />
         <Button title="Eliminar" color="red" onPress={onDelete} />
       </View>
     </View>
@@ -49,9 +51,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     elevation: 2,
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  checkbox: {
+    fontSize: 24,
+    marginRight: 8,
+  },
   title: {
     fontSize: 18,
-    marginBottom: 6,
+    flex: 1,
   },
   image: {
     width: "100%",
@@ -65,7 +76,7 @@ const styles = StyleSheet.create({
   },
   buttons: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
   },
 });
 
