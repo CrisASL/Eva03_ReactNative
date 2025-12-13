@@ -26,7 +26,7 @@ export default function NewTask({ onCreate }: NewTaskProps) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: false,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images,
       quality: 1,
     });
 

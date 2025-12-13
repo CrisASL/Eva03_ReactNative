@@ -71,11 +71,20 @@ export const api = {
       },
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Failed to fetch tasks');
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to fetch tasks');
+      }
+      return data.data;
+    } catch (e: any) {
+      console.error("GetTasks error response:", text);
+      if (e instanceof SyntaxError) {
+         throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}`);
+      }
+      throw e;
     }
-    return data.data;
   },
 
   createTask: async (task: { title: string; location?: { latitude: number; longitude: number } | null; photoUri?: string }) => {
@@ -94,11 +103,20 @@ export const api = {
       }),
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Failed to create task');
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to create task');
+      }
+      return data.data; // Returns the created task
+    } catch (e: any) {
+      console.error("CreateTask error response:", text);
+      if (e instanceof SyntaxError) {
+         throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}`);
+      }
+      throw e;
     }
-    return data.data; // Returns the created task
   },
 
   updateTask: async (id: string, updates: Partial<Task>) => {
@@ -112,11 +130,20 @@ export const api = {
       body: JSON.stringify(updates),
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Failed to update task');
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update task');
+      }
+      return data.data;
+    } catch (e: any) {
+      console.error("UpdateTask error response:", text);
+      if (e instanceof SyntaxError) {
+         throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}`);
+      }
+      throw e;
     }
-    return data.data;
   },
 
   deleteTask: async (id: string) => {
@@ -128,11 +155,20 @@ export const api = {
       },
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Failed to delete task');
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to delete task');
+      }
+      return data;
+    } catch (e: any) {
+      console.error("DeleteTask error response:", text);
+      if (e instanceof SyntaxError) {
+         throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}`);
+      }
+      throw e;
     }
-    return data;
   },
 
   uploadImage: async (uri: string): Promise<string> => {
@@ -160,10 +196,19 @@ export const api = {
       body: formData,
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Failed to upload image');
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to upload image');
+      }
+      return data.data.url; // Assuming the API returns the URL in data.url
+    } catch (e: any) {
+      console.error("UploadImage error response:", text);
+      if (e instanceof SyntaxError) {
+         throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}`);
+      }
+      throw e;
     }
-    return data.data.url; // Assuming the API returns the URL in data.url
   }
 };
